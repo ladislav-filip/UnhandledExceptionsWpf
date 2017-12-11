@@ -14,6 +14,7 @@ namespace UnhandledExceptionsWpf
         private string _title;
         private string _errorText;
         private RelayCommand _errorThrCmd;
+        private SynchronizationContext _synchronizationContext;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -25,40 +26,13 @@ namespace UnhandledExceptionsWpf
 
         public MainWindowViewModel()
         {
-            var synchronizationContext = SynchronizationContext.Current;
+            _synchronizationContext = SynchronizationContext.Current;
 
             // chyba ve vlákně
-            ErrorCmd = new RelayCommand(() =>
-            {
-                Task.Factory.StartNew(() =>
-                {                    
-                    Thread.Sleep(300);
-                    throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
-                });
-                Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-            });
+            ErrorCmd = new RelayCommand(ThreadFactoryException);
 
             // chyba ošetřena ve vlákně
-            ErrorThrCmd = new RelayCommand(() =>
-            {
-                Task.Factory.StartNew(() =>
-                {
-                    try
-                    {
-                        Thread.Sleep(300);
-                        throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
-                    }
-                    catch (Exception e)
-                    {
-                        synchronizationContext.Post(o =>
-                        {
-                            var err = (Exception) o;
-                            MessageBox.Show(err.Message, "Thread", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        }, e);
-                    }
-                });
-                Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-            });
+            ErrorThrCmd = new RelayCommand(ThreadHandledException);
 
             // chyba, která se "nehandluje"
             ErrorMainCmd = new RelayCommand(() =>
@@ -73,6 +47,37 @@ namespace UnhandledExceptionsWpf
                 ErrorText = "Volam hlavni aplikační chybu";                
                 throw new ApplicationException("Toto je hlavni aplikační chyba");
             });
+        }
+
+        private void ThreadHandledException()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                try
+                {
+                    Thread.Sleep(300);
+                    throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
+                }
+                catch (Exception e)
+                {
+                    _synchronizationContext.Post(o =>
+                    {
+                        var err = (Exception)o;
+                        MessageBox.Show(err.Message, "Thread", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }, e);
+                }
+            });
+            Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private void ThreadFactoryException()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                Thread.Sleep(300);
+                throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
+            });
+            Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
         }
 
         public RelayCommand ErrorThrCmd
