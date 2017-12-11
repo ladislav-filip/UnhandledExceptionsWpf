@@ -1,0 +1,24 @@
+﻿<Window x:Class="UnhandledExceptionsWpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:UnhandledExceptionsWpf"
+        mc:Ignorable="d"
+        Title="{Binding Title}" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="2*"/>
+        </Grid.ColumnDefinitions>
+        
+        <StackPanel Grid.Column="0">
+            <Button Height="25" Command="{Binding ErrorCmd}" >Click thread error</Button>
+            <Button Height="25" Command="{Binding ErrorAppMainCmd}" >Click main app error</Button>
+            <Button Height="25" Command="{Binding ErrorMainCmd}" >Click main error</Button>
+        </StackPanel>
+        
+        <TextBlock VerticalAlignment="Center" Grid.Column="1" Text="{Binding ErrorText}"/>
+        
+    </Grid>
+</Window>
