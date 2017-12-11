@@ -12,7 +12,7 @@ namespace UnhandledExceptionsWpf
     public partial class App : Application
     {
         private SynchronizationContext _synchronizationContext;
-        private int _thrId;
+        private readonly int _thrId;
 
         public App()
         {
@@ -24,13 +24,16 @@ namespace UnhandledExceptionsWpf
             _synchronizationContext = SynchronizationContext.Current;
 
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
-            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;            
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
+            Init();
+        }
+
+        private static void Init()
+        {
             var mainWind = new MainWindow();
-            var model = new MainWindowViewModel();
-            model.Title = "Moje aplikace";
+            var model = new MainWindowViewModel {Title = "Moje aplikace"};
             mainWind.DataContext = model;
-
             mainWind.Show();
         }
 
@@ -38,36 +41,27 @@ namespace UnhandledExceptionsWpf
         {
             System.Diagnostics.Debug.WriteLine("CurrentDomain_UnhandledException");
             var excep = (Exception)e.ExceptionObject;
-            if (Thread.CurrentThread.ManagedThreadId != _thrId)
-            {
-                _synchronizationContext.Post(o =>
-                {
-                    var ex = (Exception)o;
-                    ShowError(ex, "UnhandledException POST");
-                }, excep.GetBaseException());
-            }
-            else
-            {
-                ShowError(excep.GetBaseException(), "UnhandledException");
-                Environment.Exit(-1);
-            }
+            ShowError(excep.GetBaseException(), "UnhandledException");
+            Environment.Exit(-1);
         }
 
         private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
             System.Diagnostics.Debug.WriteLine("TaskScheduler_UnobservedTaskException");
-            if (Thread.CurrentThread.ManagedThreadId != _thrId)
-            {
-                _synchronizationContext.Post(o =>
-                {
-                    var ex = (Exception) o;
-                    ShowError(ex, "UnobservedTaskException POST");
-                }, e.Exception.GetBaseException());
-            }
-            else
-            {
-                ShowError(e.Exception.GetBaseException(), "UnobservedTaskException");
-            }
+            //if (Thread.CurrentThread.ManagedThreadId != _thrId)
+            //{
+            //    _synchronizationContext.Post(o =>
+            //    {
+            //        var ex = (Exception) o;
+            //        ShowError(ex, "UnobservedTaskException POST");
+            //    }, e.Exception.GetBaseException());
+            //}
+            //else
+            //{
+            //    ShowError(e.Exception.GetBaseException(), "UnobservedTaskException");
+            //}
+
+            ShowError(e.Exception.GetBaseException(), "UnobservedTaskException: " + DateTime.Now.ToString("HH:mm:ss"));
         }
 
         private void App_OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)

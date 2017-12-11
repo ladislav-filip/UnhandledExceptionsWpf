@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using UnhandledExceptionsWpf.Annotations;
 
 namespace UnhandledExceptionsWpf
@@ -12,6 +13,7 @@ namespace UnhandledExceptionsWpf
     {
         private string _title;
         private string _errorText;
+        private RelayCommand _errorThrCmd;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -30,12 +32,30 @@ namespace UnhandledExceptionsWpf
             {
                 Task.Factory.StartNew(() =>
                 {                    
-                    synchronizationContext.Post(o =>
+                    Thread.Sleep(300);
+                    throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
+                });
+                Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
+            });
+
+            // chyba ošetřena ve vlákně
+            ErrorThrCmd = new RelayCommand(() =>
+            {
+                Task.Factory.StartNew(() =>
+                {
+                    try
                     {
-                        ErrorText = "Volam chybu vlakna...";
-                    }, null);
-                    Thread.Sleep(1000);
-                    throw new ApplicationException("Chyba nahoda");
+                        Thread.Sleep(300);
+                        throw new ApplicationException("Chyba vlakno: " + DateTime.Now.ToString("HH:mm:ss"));
+                    }
+                    catch (Exception e)
+                    {
+                        synchronizationContext.Post(o =>
+                        {
+                            var err = (Exception) o;
+                            MessageBox.Show(err.Message, "Thread", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        }, e);
+                    }
                 });
                 Title = DateTime.Now.ToString(CultureInfo.InvariantCulture);
             });
@@ -53,6 +73,17 @@ namespace UnhandledExceptionsWpf
                 ErrorText = "Volam hlavni aplikační chybu";                
                 throw new ApplicationException("Toto je hlavni aplikační chyba");
             });
+        }
+
+        public RelayCommand ErrorThrCmd
+        {
+            get => _errorThrCmd;
+            set
+            {
+                if (Equals(value, _errorThrCmd)) return;
+                _errorThrCmd = value;
+                OnPropertyChanged();
+            }
         }
 
         public string Title
