@@ -15,6 +15,7 @@ namespace UnhandledExceptionsWpf
         private string _errorText;
         private RelayCommand _errorThrCmd;
         private SynchronizationContext _synchronizationContext;
+        private RelayCommand m_errorBckgThrCmd;
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -34,6 +35,9 @@ namespace UnhandledExceptionsWpf
             // chyba ošetřena ve vlákně
             ErrorThrCmd = new RelayCommand(ThreadHandledException);
 
+            // chyba v background vlákně
+            ErrorBckgThrCmd = new RelayCommand(ThreadBackgroundHandledException);
+
             // chyba, která se "nehandluje"
             ErrorMainCmd = new RelayCommand(() =>
             {
@@ -47,6 +51,45 @@ namespace UnhandledExceptionsWpf
                 ErrorText = "Volam hlavni aplikační chybu";                
                 throw new ApplicationException("Toto je hlavni aplikační chyba");
             });
+        }
+
+        public RelayCommand ErrorBckgThrCmd
+        {
+            get => m_errorBckgThrCmd;
+            set
+            {
+                if (Equals(value, m_errorBckgThrCmd)) return;
+                m_errorBckgThrCmd = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private void ThreadBackgroundHandledException()
+        {
+            Exception err = null;
+            var thr = new BackgroundWorker();
+            ErrorText = "Start background...";
+            thr.DoWork += delegate(object sender, DoWorkEventArgs e)
+            {
+                try
+                {
+                    Thread.Sleep(200);
+                    throw new ApplicationException("Background error");
+                }
+                catch (Exception ex)
+                {
+                    err = ex;
+                }
+            };
+            thr.RunWorkerCompleted += delegate(object sender, RunWorkerCompletedEventArgs e)
+            {
+                ErrorText = "Backgroundworker finnish.";
+                if (err != null)
+                {
+                    MessageBox.Show(err.Message, "Backgroundworker", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            };
+            thr.RunWorkerAsync();
         }
 
         private void ThreadHandledException()

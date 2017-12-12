@@ -15,6 +15,7 @@
         <StackPanel Grid.Column="0">
             <Button Height="25" Command="{Binding ErrorCmd}" >Click thread error</Button>
             <Button Height="25" Command="{Binding ErrorThrCmd}" >Click thread handled error</Button>
+            <Button Height="25" Command="{Binding ErrorBckgThrCmd}" >Click thread background error</Button>
             <Button Height="25" Command="{Binding ErrorAppMainCmd}" >Click main app error</Button>
             <Button Height="25" Command="{Binding ErrorMainCmd}" >Click main error</Button>
         </StackPanel>
